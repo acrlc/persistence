@@ -17,8 +17,8 @@ extension UserDefaultsKey where Self == FirstLaunchKey {
 ```
 ### Value Conversion
 Standard values use the `PassthroughConversion` method
+Custom values must use a `ValueConversion` method
 ```swift
-/// A struct for values that convert back and forth from the same type
 struct IntBoolConversion: ValueConversion {
   /// The data converted before reading
  static func decode(data: Int) -> Bool { data > 0 ? true : false }
@@ -30,7 +30,7 @@ struct TestKey: UserDefaultsKey {
  typealias Conversion = IntBoolConversion
  static let defaultValue: Bool = false
 }
-extension TestKey where Self == TestKey {
+extension UserDefaultsKey where Self == TestKey {
  static var testValue: Self { Self() } 
 }
 // Now this value can automatically be converted
