@@ -17,6 +17,7 @@ extension UserDefaultsKey where Self == FirstLaunchKey {
 ```
 ### Value Conversion
 Standard values use the `PassthroughConversion` method
+
 Custom values must use a `ValueConversion` method
 ```swift
 struct IntBoolConversion: ValueConversion {
