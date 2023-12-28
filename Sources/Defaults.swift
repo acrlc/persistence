@@ -247,11 +247,11 @@ public struct StandardDefaultsProperty<Defaults, Key, Value>
  }
 }
 
-typealias UserDefault<Key, Value> =
+public typealias UserDefault<Key, Value> =
  DefaultsProperty<CustomUserDefaults, Key, Value>
   where Key: UserDefaultsKey
 
-typealias StandardDefault<Key, Value> =
+public typealias StandardDefault<Key, Value> =
  StandardDefaultsProperty<CustomUserDefaults, Key, Value>
   where Key: StandardUserDefaultsKey
 

@@ -19,5 +19,5 @@ public extension UserDefaultsKey where Value: AutoCodable {
  typealias Conversion = CodeConversion<Value>
 }
 
-protocol CodableDefaultsKey: UserDefaultsKey
+public protocol CodableDefaultsKey: UserDefaultsKey
  where Value: AutoCodable, Conversion == CodeConversion<Value> {}
