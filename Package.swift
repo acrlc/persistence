@@ -6,7 +6,7 @@ let package = Package(
  platforms: [.macOS(.v10_15), .iOS(.v15)],
  products: [.library(name: "Persistence", targets: ["Persistence"])],
  dependencies: [
-  .package(url: "https://github.com/acrlc/core.git", from: "0.1.0")
+  .package(url: "https://github.com/acrlc/core.git", branch: "main")
  ],
  targets: [
   .target(
