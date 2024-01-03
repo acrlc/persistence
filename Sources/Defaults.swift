@@ -13,6 +13,7 @@ public protocol UserDefaultsKey: Hashable where Conversion.Value == Value {
  /// This can be set to indicate whether a value should be added when modified
  /// Such as instances where values are equal
  static func shouldOverwrite(_ oldValue: Value, _ newValue: Value) -> Bool
+ static var name: String { get }
 }
 
 public extension UserDefaultsKey {
@@ -50,13 +51,14 @@ public extension UserDefaultsKey where Value: Infallible {
  static var defaultValue: Value { .defaultValue }
 }
 
-extension UserDefaultsKey {
- @usableFromInline
- static var name: String { String(describing: Self.self) }
+public extension UserDefaultsKey {
+ @_disfavoredOverload
+ @inlinable static var name: String { String(describing: Self.self) }
 }
 
 public protocol StandardUserDefaultsValue {}
 extension Bool: StandardUserDefaultsValue {}
+extension Int: StandardUserDefaultsValue {}
 extension String: StandardUserDefaultsValue {}
 import struct Foundation.UUID
 extension UUID: StandardUserDefaultsValue {}
