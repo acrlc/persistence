@@ -90,12 +90,12 @@ open class CustomUserDefaults: UserDefaults {
      return value as! Key.Value
     } else if let value = self.value(forKey: key) {
      assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     self.cache[key] = value
+     defer { self.cache[key] = value }
      return value as! Key.Value
     }
    }
    let value = Key.defaultValue
-   self.cache[key] = value
+   defer { self.cache[key] = value }
    return value
   }
   set {
@@ -108,7 +108,7 @@ open class CustomUserDefaults: UserDefaults {
    let oldValue = self[standard: Key.self]
    if Key.shouldOverwrite(oldValue, newValue) {
     let key = Key.name
-    self.cache[key] = newValue
+    defer { self.cache[key] = newValue }
     // before setting, do some final checking if there are file size limitations, etc.
     // ...
     self.set(newValue, forKey: key)
@@ -131,12 +131,12 @@ open class CustomUserDefaults: UserDefaults {
       "value for \(key) must be \(Key.Conversion.Data.self)"
      )
      let value = converter.decode(data: data as! Key.Conversion.Data)
-     self.cache[key] = value
+     defer { self.cache[key] = value }
      return value
     }
    }
    let value = Key.defaultValue
-   self.cache[key] = value
+   defer { self.cache[key] = value }
    return value
   }
   set {
@@ -149,7 +149,7 @@ open class CustomUserDefaults: UserDefaults {
    let oldValue = self[custom: Key.self]
    if Key.shouldOverwrite(oldValue, newValue) {
     let key = Key.name
-    self.cache[key] = newValue
+    defer { self.cache[key] = newValue }
     // before setting, do some final checking if there are file size limitations, etc.
     // ...
     self.set(Key.Conversion.encode(value: newValue), forKey: key)
@@ -281,12 +281,12 @@ open class ViewDefaults: CustomUserDefaults & ViewObserver {
      return value as! Key.Value
     } else if let value = self.value(forKey: key) {
      assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     self.cache[key] = value
+     defer { self.cache[key] = value }
      return value as! Key.Value
     }
    }
    let value = Key.defaultValue
-   self.cache[key] = value
+   defer { self.cache[key] = value }
    return value
   }
   set {
@@ -301,7 +301,7 @@ open class ViewDefaults: CustomUserDefaults & ViewObserver {
    if Key.shouldOverwrite(oldValue, newValue) {
     let key = Key.name
     DispatchQueue.main.async { self.objectWillChange.send() }
-    self.cache[key] = newValue
+    defer { self.cache[key] = newValue }
     // before setting, do some final checking if there are file size limitations, etc.
     // ...
     self.set(newValue, forKey: key)
@@ -324,12 +324,12 @@ open class ViewDefaults: CustomUserDefaults & ViewObserver {
       "value for \(key) must be \(Key.Conversion.Data.self)"
      )
      let value = converter.decode(data: data as! Key.Conversion.Data)
-     self.cache[key] = value
+     defer { self.cache[key] = value }
      return value
     }
    }
    let value = Key.defaultValue
-   self.cache[key] = value
+   defer { self.cache[key] = value }
    return value
   }
   set {
@@ -344,7 +344,7 @@ open class ViewDefaults: CustomUserDefaults & ViewObserver {
    if Key.shouldOverwrite(oldValue, newValue) {
     let key = Key.name
     DispatchQueue.main.async { self.objectWillChange.send() }
-    self.cache[key] = newValue
+    defer { self.cache[key] = newValue }
     // before setting, do some final checking if there are file size limitations, etc.
     // ...
     self.set(Key.Conversion.encode(value: newValue), forKey: key)
