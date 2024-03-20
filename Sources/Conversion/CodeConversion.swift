@@ -87,3 +87,23 @@ public extension UserDefaultsKey where Value: AutoCodable & Infallible {
 
 public protocol InfallibleCodableDefaultsKey: UserDefaultsKey
  where Value: AutoCodable & Infallible, Conversion == InfallibleCodeConversion<Value> {}
+
+// MARK: - RawRepresentable
+public struct RawValueConversion<A: RawRepresentable>: ValueConversion
+where A.RawValue: StandardUserDefaultsValue {
+ /// The data converted before reading
+ public static func decode(data: A.RawValue) -> A where A: Infallible {
+  A(rawValue: data) ?? .defaultValue
+ }
+ 
+ @_disfavoredOverload
+ /// The data converted before reading
+ public static func decode(data: A.RawValue) -> A { A(rawValue: data)! }
+ /// The value converted before storing
+ public static func encode(value: A) -> A.RawValue { value.rawValue }
+}
+
+public protocol RawValueConvertibleKey: UserDefaultsKey where
+Value: RawRepresentable,
+Value.RawValue: StandardUserDefaultsValue,
+Conversion == RawValueConversion<Value> {}
