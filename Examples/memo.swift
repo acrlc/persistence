@@ -4,7 +4,7 @@ import Persistence // ..
 
 /// A persistent echo command
 @main struct MemoCommand: Command {
- @Standard(.memo) var memo
+ @StandardDefault(.memo) var memo
  @Flag var reset: Bool
  @Input var newValue: String?
  
