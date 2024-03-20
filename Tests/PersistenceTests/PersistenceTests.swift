@@ -33,7 +33,7 @@ final class PersistenceTests: XCTestCase {
  }
 
  // MARK: - Custom Implementation
- let customDefaults = CustomUserDefaults.shared
+ let customDefaults = CustomUserDefaults.custom
 
  /// Ensures that the protocol overrides work
  func testOverloads() {
@@ -128,7 +128,7 @@ extension UserDefaultsKey where Self == OptionalTestKey {
 
 import SwiftUI
 import Core
-// FIXME: plistcodable not encoding
+
 enum Tag: String, JSONCodable, CaseIterable, ExpressibleByNilLiteral {
  case none, clear, green, orange, blue, red
  init(nilLiteral: ()) { self = .none }
@@ -190,7 +190,7 @@ struct PersistentUI: App {
   @Standard(.label) var label
 
   var body: some View {
-   VStack {
+   VStack(spacing: 11.5) {
     HStack(alignment: .firstTextBaseline) {
      Text("Tag")
      Button(tag.rawValue) {
@@ -205,6 +205,12 @@ struct PersistentUI: App {
      Button("Clear") { clear() }.disabled(isDisabled).padding(.leading)
      Spacer()
     }
+
+    HStack {
+     Text("Note: Must copy, cut, or paste a value for label").font(.footnote)
+     Spacer()
+    }
+
     VStack(alignment: .leading, spacing: 8.5) {
      HStack {
       Text("Key for ") +
@@ -214,10 +220,6 @@ struct PersistentUI: App {
      }
      HStack {
       Text("Key for Label is \(nilDescription(for: "LabelKey"))")
-      Spacer()
-     }
-     HStack {
-      Text("Note: Must copy, cut, or paste a value for label").font(.footnote)
       Spacer()
      }
     }
@@ -240,7 +242,7 @@ struct PersistentUI: App {
   }
 
   func clear() {
-   defaults.objectWillChange.send()
+   _label.defaults.objectWillChange.send()
    for key in ["TagKey", "LabelKey"] {
     defaults.removeObject(forKey: key)
    }
