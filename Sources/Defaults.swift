@@ -59,7 +59,17 @@ public extension UserDefaultsKey {
 public protocol StandardUserDefaultsValue {}
 extension Bool: StandardUserDefaultsValue {}
 extension Int: StandardUserDefaultsValue {}
+extension Int8: StandardUserDefaultsValue {}
+extension Int16: StandardUserDefaultsValue {}
+extension Int32: StandardUserDefaultsValue {}
+extension UInt: StandardUserDefaultsValue {}
+extension UInt8: StandardUserDefaultsValue {}
+extension UInt16: StandardUserDefaultsValue {}
+extension UInt32: StandardUserDefaultsValue {}
 extension String: StandardUserDefaultsValue {}
+extension Double: StandardUserDefaultsValue {}
+extension [String: Any]: StandardUserDefaultsValue {}
+
 import struct Foundation.UUID
 extension UUID: StandardUserDefaultsValue {}
 extension Optional: StandardUserDefaultsValue
@@ -75,84 +85,46 @@ import protocol Core.AutoCodable
 /// A user defaults that allows typed conversion through the protocol
 /// ``ValueConversion`` using value specific subscripts
 open class CustomUserDefaults: UserDefaults {
- public static let shared = CustomUserDefaults()
- var cache: [String: Any] = .empty
+ public static let custom = CustomUserDefaults()
+ // static var cache: [String: Any] = .empty
+
+ public func reset() {
+  for key in self.dictionaryRepresentation().keys {
+   self.removeObject(forKey: key)
+  }
+ }
+
  /// An unchecked key subcript that can store values without a conversion method
  /// Important: Key values must conform to `StandardUserDefaultsValue` to
  /// indicate that they are supported by the standard `UserDefaults`
  open subscript<Key: StandardUserDefaultsKey>(standard key: Key.Type) -> Key.Value {
-  get {
-   let key = Key.name
-   let contains = self.dictionaryRepresentation().keys.contains(key)
-   if contains {
-    if let value = self.cache[key] {
-     assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     return value as! Key.Value
-    } else if let value = self.value(forKey: key) {
-     assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     defer { self.cache[key] = value }
-     return value as! Key.Value
-    }
-   }
-   let value = Key.defaultValue
-   defer { self.cache[key] = value }
-   return value
-  }
+  get { self.value(forKey: Key.name) as? Key.Value ?? Key.defaultValue }
   set {
    guard !Key.shouldRemove(newValue) else {
-    let key = Key.name
-    self.cache.removeValue(forKey: key)
-    self.removeObject(forKey: key)
+    self.removeObject(forKey: Key.name)
     return
    }
-   let oldValue = self[standard: Key.self]
-   if Key.shouldOverwrite(oldValue, newValue) {
-    let key = Key.name
-    defer { self.cache[key] = newValue }
-    // before setting, do some final checking if there are file size limitations, etc.
-    // ...
-    self.set(newValue, forKey: key)
+   if Key.shouldOverwrite(self[standard: Key.self], newValue) {
+    self.set(newValue, forKey: Key.name)
    }
   }
  }
 
  open subscript<Key: UserDefaultsKey>(custom key: Key.Type) -> Key.Value {
   get {
-   let converter = Key.Conversion.self
    let key = Key.name
-   let contains = self.dictionaryRepresentation().keys.contains(key)
-   if contains {
-    if let value = self.cache[key] {
-     assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     return value as! Key.Conversion.Value
-    } else if let data = self.value(forKey: key) {
-     assert(
-      data is Key.Conversion.Data,
-      "value for \(key) must be \(Key.Conversion.Data.self)"
-     )
-     let value = converter.decode(data: data as! Key.Conversion.Data)
-     defer { self.cache[key] = value }
-     return value
-    }
+   if let data = self.value(forKey: key) {
+    return Key.Conversion.self.decode(data: data as! Key.Conversion.Data)
    }
-   let value = Key.defaultValue
-   defer { self.cache[key] = value }
-   return value
+   return Key.defaultValue
   }
   set {
    guard !Key.shouldRemove(newValue) else {
-    let key = Key.name
-    self.cache.removeValue(forKey: key)
-    self.removeObject(forKey: key)
+    self.removeObject(forKey: Key.name)
     return
    }
-   let oldValue = self[custom: Key.self]
-   if Key.shouldOverwrite(oldValue, newValue) {
-    let key = Key.name
-    defer { self.cache[key] = newValue }
-    // before setting, do some final checking if there are file size limitations, etc.
-    // ...
-    self.set(Key.Conversion.encode(value: newValue), forKey: key)
+   if Key.shouldOverwrite(self[custom: Key.self], newValue) {
+    self.set(Key.Conversion.encode(value: newValue), forKey: Key.name)
    }
   }
  }
@@ -164,7 +136,7 @@ public struct DefaultsProperty<Defaults, Key, Value>
  where Defaults: CustomUserDefaults, Key: UserDefaultsKey {
  let key: Key
  let keyPath: WritableKeyPath<Key.Value, Value>
- unowned let defaults: Defaults
+ let defaults: Defaults
 
  var keyValue: Key.Value {
   get { defaults[custom: Key.self] }
@@ -185,13 +157,13 @@ public struct DefaultsProperty<Defaults, Key, Value>
   )
  }
 
- public mutating func update() {}
+ // public mutating func update() {}
 
  public init(_ key: Key)
   where Defaults == CustomUserDefaults, Value == Key.Value {
   self.key = key
   self.keyPath = \Key.Value.self
-  self.defaults = .shared
+  self.defaults = .custom
  }
 
  public init(
@@ -199,7 +171,7 @@ public struct DefaultsProperty<Defaults, Key, Value>
  ) where Defaults == CustomUserDefaults {
   self.key = key
   self.keyPath = keyPath
-  self.defaults = .shared
+  self.defaults = .custom
  }
 }
 
@@ -231,13 +203,13 @@ public struct StandardDefaultsProperty<Defaults, Key, Value>
   )
  }
 
- public mutating func update() {}
+ // public mutating func update() {}
 
  public init(_ key: Key)
   where Defaults == CustomUserDefaults, Value == Key.Value {
   self.key = key
   self.keyPath = \Key.Value.self
-  self.defaults = .shared
+  self.defaults = .custom
  }
 
  public init(
@@ -245,7 +217,7 @@ public struct StandardDefaultsProperty<Defaults, Key, Value>
  ) where Defaults == CustomUserDefaults {
   self.key = key
   self.keyPath = keyPath
-  self.defaults = .shared
+  self.defaults = .custom
  }
 }
 
@@ -272,82 +244,37 @@ open class ViewDefaults: CustomUserDefaults & ViewObserver {
  override open subscript<Key: StandardUserDefaultsKey>(
   standard key: Key.Type
  ) -> Key.Value {
-  get {
-   let key = Key.name
-   let contains = self.dictionaryRepresentation().keys.contains(key)
-   if contains {
-    if let value = self.cache[key] {
-     assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     return value as! Key.Value
-    } else if let value = self.value(forKey: key) {
-     assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     defer { self.cache[key] = value }
-     return value as! Key.Value
-    }
-   }
-   let value = Key.defaultValue
-   defer { self.cache[key] = value }
-   return value
-  }
+  get { self.value(forKey: Key.name) as? Key.Value ?? Key.defaultValue }
   set {
    guard !Key.shouldRemove(newValue) else {
-    let key = Key.name
-    DispatchQueue.main.async { self.objectWillChange.send() }
-    self.cache.removeValue(forKey: key)
-    self.removeObject(forKey: key)
+    self.objectWillChange.send()
+    self.removeObject(forKey: Key.name)
     return
    }
-   let oldValue = self[standard: Key.self]
-   if Key.shouldOverwrite(oldValue, newValue) {
-    let key = Key.name
-    DispatchQueue.main.async { self.objectWillChange.send() }
-    defer { self.cache[key] = newValue }
-    // before setting, do some final checking if there are file size limitations, etc.
-    // ...
-    self.set(newValue, forKey: key)
+   if Key.shouldOverwrite(self[standard: Key.self], newValue) {
+    self.objectWillChange.send()
+    self.set(newValue, forKey: Key.name)
    }
   }
  }
 
  override open subscript<Key: UserDefaultsKey>(custom key: Key.Type) -> Key.Value {
   get {
-   let converter = Key.Conversion.self
    let key = Key.name
-   let contains = self.dictionaryRepresentation().keys.contains(key)
-   if contains {
-    if let value = self.cache[key] {
-     assert(value is Key.Value, "value for \(key) must be \(Key.Value.self)")
-     return value as! Key.Conversion.Value
-    } else if let data = self.value(forKey: key) {
-     assert(
-      data is Key.Conversion.Data,
-      "value for \(key) must be \(Key.Conversion.Data.self)"
-     )
-     let value = converter.decode(data: data as! Key.Conversion.Data)
-     defer { self.cache[key] = value }
-     return value
-    }
+   if let data = self.value(forKey: key) {
+    return Key.Conversion.self.decode(data: data as! Key.Conversion.Data)
    }
-   let value = Key.defaultValue
-   defer { self.cache[key] = value }
-   return value
+   return Key.defaultValue
   }
   set {
    guard !Key.shouldRemove(newValue) else {
-    let key = Key.name
-    DispatchQueue.main.async { self.objectWillChange.send() }
-    self.cache.removeValue(forKey: key)
-    self.removeObject(forKey: key)
+    self.objectWillChange.send()
+    self.removeObject(forKey: Key.name)
     return
    }
-   let oldValue = self[custom: Key.self]
-   if Key.shouldOverwrite(oldValue, newValue) {
-    let key = Key.name
-    DispatchQueue.main.async { self.objectWillChange.send() }
-    defer { self.cache[key] = newValue }
-    // before setting, do some final checking if there are file size limitations, etc.
-    // ...
-    self.set(Key.Conversion.encode(value: newValue), forKey: key)
+   if Key.shouldOverwrite(self[custom: Key.self], newValue) {
+    self.objectWillChange.send()
+    self.set(Key.Conversion.encode(value: newValue), forKey: Key.name)
    }
   }
  }
@@ -380,18 +307,18 @@ public struct ViewDefaultsProperty<Defaults, Key, Value>: DynamicProperty
   )
  }
 
- public func update() {
-  let key = Key.name
-  if defaults.cache.keys.contains(key),
-     !defaults.dictionaryRepresentation().keys.contains(key) {
-   defaults.cache.removeValue(forKey: key)
-  }
- }
+// public func update() {
+//  let key = Key.name
+//  if Defaults.cache.keys.contains(key),
+//     !defaults.dictionaryRepresentation().keys.contains(key) {
+//   Defaults.cache.removeValue(forKey: key)
+//  }
+// }
 
  public init(_ key: Key) where Defaults == ViewDefaults, Value == Key.Value {
   self.key = key
   self.keyPath = \Key.Value.self
-  self.defaults = .view
+  self.defaults = ViewDefaults()
  }
 
  public init(
@@ -399,7 +326,7 @@ public struct ViewDefaultsProperty<Defaults, Key, Value>: DynamicProperty
  ) where Defaults == ViewDefaults {
   self.key = key
   self.keyPath = keyPath
-  self.defaults = .view
+  self.defaults = ViewDefaults()
  }
 }
 
@@ -432,18 +359,18 @@ public struct StandardViewDefaultsProperty
   )
  }
 
- public func update() {
-  let key = Key.name
-  if defaults.cache.keys.contains(key),
-     !defaults.dictionaryRepresentation().keys.contains(key) {
-   defaults.cache.removeValue(forKey: key)
-  }
- }
+// public func update() {
+//  let key = Key.name
+//  if Defaults.cache.keys.contains(key),
+//     !defaults.dictionaryRepresentation().keys.contains(key) {
+//   Defaults.cache.removeValue(forKey: key)
+//  }
+// }
 
  public init(_ key: Key) where Defaults == ViewDefaults, Value == Key.Value {
   self.key = key
   self.keyPath = \Key.Value.self
-  self.defaults = .view
+  self.defaults = ViewDefaults()
  }
 
  public init(
@@ -451,7 +378,7 @@ public struct StandardViewDefaultsProperty
  ) where Defaults == ViewDefaults {
   self.key = key
   self.keyPath = keyPath
-  self.defaults = .view
+  self.defaults = ViewDefaults()
  }
 }
 
