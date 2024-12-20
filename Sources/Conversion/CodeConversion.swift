@@ -24,7 +24,7 @@ public protocol CodableDefaultsKey: UserDefaultsKey
 
 // MARK: Serializable
 public struct SerialConversion<Value: AutoSerializable>: ValueConversion {
- public typealias Data = [String: Any]
+ public typealias Data = Value.SerializedInput
  public static func decode(data: Data) -> Value {
   do {
    return try Value.decoder.decode(Value.self, from: Value.deserialize(data))
@@ -47,7 +47,7 @@ public protocol SerialDefaultsKey: UserDefaultsKey
 
 // MARK: - Infallible
 public struct InfallibleSerialConversion<Value: AutoSerializable & Infallible>: ValueConversion {
- public typealias Data = [String: Any]
+ public typealias Data = Value.SerializedInput
  public static func decode(data: Data) -> Value {
   do {
    return try Value.decoder.decode(Value.self, from: Value.deserialize(data))

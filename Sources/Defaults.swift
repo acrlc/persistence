@@ -81,11 +81,29 @@ public protocol StandardUserDefaultsKey: UserDefaultsKey
 import protocol Combine.TopLevelEncoder
 import protocol Core.AutoCodable
 
-// MARK: - Defaults
+// MARK: - Defaults -
+public extension UserDefaults {
+ func isMissing<A: UserDefaultsKey>(key _: A) -> Bool {
+  object(forKey: A.name) == nil
+ }
+
+ func isMissing<A: StandardUserDefaultsKey>(key _: A) -> Bool {
+  object(forKey: A.name) == nil
+ }
+
+ func contains<A: UserDefaultsKey>(key _: A) -> Bool {
+  object(forKey: A.name) != nil
+ }
+
+ func contains<A: StandardUserDefaultsKey>(key _: A) -> Bool {
+  object(forKey: A.name) != nil
+ }
+}
+
+// MARK: - Custom
 /// A user defaults that allows typed conversion through the protocol
 /// ``ValueConversion`` using value specific subscripts
 open class CustomUserDefaults: UserDefaults {
- public static let custom = CustomUserDefaults()
  // static var cache: [String: Any] = .empty
 
  public func reset() {
@@ -128,6 +146,74 @@ open class CustomUserDefaults: UserDefaults {
    }
   }
  }
+}
+
+extension UserDefaults {
+ public static let custom = CustomUserDefaults()
+}
+
+public extension CustomUserDefaults {
+ subscript<A: UserDefaultsKey>(_: A) -> A.Value {
+  get { self[custom: A.self] }
+  set { self[custom: A.self] = newValue }
+ }
+
+ subscript<A: StandardUserDefaultsKey>(_: A) -> A.Value {
+  get { self[standard: A.self] }
+  set { self[standard: A.self] = newValue }
+ }
+
+ func removeValue<A: UserDefaultsKey>(forKey: A) {
+  removeObject(forKey: A.name)
+ }
+
+ func removeValue<A: StandardUserDefaultsKey>(forKey: A) {
+  removeObject(forKey: A.name)
+ }
+
+// open subscript<Key: CustomStringConvertible, Value: StandardUserDefaultsValue>(
+//  standard key: Key, defaultValue: Value
+// ) -> Key.Value {
+//  get { self.value(forKey: Key.name) as? Key.Value ?? Key.defaultValue }
+//  set {
+//   guard !Key.shouldRemove(newValue) else {
+//    self.removeObject(forKey: Key.name)
+//    return
+//   }
+//   if Key.shouldOverwrite(self[standard: Key.self], newValue) {
+//    self.set(newValue, forKey: Key.name)
+//   }
+//  }
+// }
+// // TODO: Base subscripting on customizable strings, so overite and removal rules
+// // can inherit from this
+// open subscript<Key: CustomStringConvertible, Value, Conversion: ValueConversion>(
+//  custom key: Key,
+//  defaultValue: Value,
+//  conversion: Conversion,
+//  shouldRemove: (Value) -> Bool = { _ in true },
+//  shouldOverwrite: (Value, Value) -> Bool = { _, _ in true }
+// ) -> Value where Conversion.Value == Value {
+//  get {
+//   let key = key.description
+//   if let data = self.value(forKey: key) {
+//    return Conversion.decode(data: data as! Conversion.Data)
+//   }
+//   return defaultValue
+//  }
+//  set {
+//   guard !shouldRemove(newValue) else {
+//    self.removeObject(forKey: key.description)
+//    return
+//   }
+//   if shouldOverwrite(
+//    self[custom: key, defaultValue, conversion, shouldRemove, shouldOverwrite],
+//    newValue
+//   ) {
+//    self.set(Conversion.encode(value: newValue), forKey: key.description)
+//   }
+//  }
+// }
 }
 
 /// A defaults that can be used to access an observable user defaults instance
@@ -234,10 +320,7 @@ import SwiftUI
 /// A base class for creating observable objects for storing defaults where
 /// values are convertible from their user default counterparts through the
 /// ``ValueConversion`` protocol so no arbitrary values can be stored
-/// There should also be a limit to the amount of data an object or key can store
-/// if this occurs the stored value can be immediately updates using a cache
 open class ViewDefaults: CustomUserDefaults & ViewObserver {
- public static let view = ViewDefaults()
  /// An unchecked key subcript that can store values without a conversion method
  /// Important: Key values must conform to `StandardUserDefaultsValue` to
  /// indicate that they are supported by the standard `UserDefaults`
@@ -278,6 +361,10 @@ open class ViewDefaults: CustomUserDefaults & ViewObserver {
    }
   }
  }
+}
+
+extension UserDefaults {
+ public static let view = ViewDefaults()
 }
 
 /// A defaults that can be used to access an observable user defaults instance
